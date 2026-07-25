@@ -3,14 +3,51 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/seed_evaluation_criteria.dart';
+import '../../../core/constants/seed_measurement_items.dart';
 import '../../../core/database/local_database.dart';
 import '../../../shared/providers/supabase_provider.dart';
 import '../../athletes/data/supabase_athlete_repository.dart';
+import '../../evaluation/data/supabase_evaluation_criteria_repository.dart';
+import '../../measurements/data/supabase_measurement_item_repository.dart';
 import '../../team_session/data/team_session_provider.dart';
 import '../../team_session/data/supabase_team_repository.dart';
 import '../../team_session/domain/staff_role.dart';
 import '../../team_session/domain/team.dart';
 import '../../team_session/domain/team_session.dart';
+
+/// 新規チーム作成直後に、初期の測定項目・評価基準（ローカル専用モードの
+/// [AppDatabase]の`onCreate`シードと同内容）をSupabase側にも投入する。
+/// ローカル専用モードはドリフトの`onCreate`で自動シードされるが、チーム共有
+/// モードはこのタイミングでしかシードする機会が無いため、ここで行っておかないと
+/// 新規チームは測定項目0件のまま始まり、Excelインポートの列自動マッピング等が
+/// 一切機能しなくなる。
+Future<void> seedDefaultsForNewTeam(WidgetRef ref, String teamId) async {
+  final client = ref.read(supabaseProvider);
+
+  final itemRepo = SupabaseMeasurementItemRepository(client, teamId);
+  await Future.wait(defaultMeasurementItems.map(itemRepo.create));
+
+  final criteriaRepo = SupabaseEvaluationCriteriaRepository(client, teamId);
+  final bandsByLocalCriteriaId = <String, List<ScoreBandsCompanion>>{};
+  for (final band in defaultScoreBands) {
+    bandsByLocalCriteriaId.putIfAbsent(band.criteriaId.value, () => []).add(band);
+  }
+  await Future.wait(defaultEvaluationCriteria.map((criterion) async {
+    final newId = await criteriaRepo.createCriterion(
+      itemKey: criterion.itemKey.value,
+      name: criterion.name.value,
+      position: criterion.position.value,
+    );
+    final bands = bandsByLocalCriteriaId[criterion.id.value] ?? const [];
+    await Future.wait(bands.map((band) => criteriaRepo.upsertBand(
+          criteriaId: newId,
+          score: band.score.value,
+          minValue: band.minValue.value,
+          maxValue: band.maxValue.value,
+        )));
+  }));
+}
 
 enum _Step { choice, createName, createResult, joinCode, role, playerRoster }
 
@@ -20,11 +57,15 @@ enum _Path { create, join }
 /// チーム新規登録 or チームIDで参加 → （新規登録ならID発行）→ 種別選択 →
 /// （選手ならチーム名簿から自分を選択）の順で進み、[TeamSession]を確定する。
 class OnboardingScreen extends ConsumerStatefulWidget {
-  const OnboardingScreen({super.key, this.fetchRoster});
+  const OnboardingScreen({super.key, this.fetchRoster, this.seedDefaults});
 
   /// 選手選択時の名簿取得処理。テストでSupabase接続無しに差し替えられるよう
   /// 差し込み可能にしている。未指定時は実際のチームのSupabase選手一覧を取得する。
   final Future<List<Athlete>> Function(WidgetRef ref, String teamId)? fetchRoster;
+
+  /// 新規チーム作成直後の初期データ投入処理。テストでSupabase接続無しに
+  /// 差し替えられるよう差し込み可能にしている。未指定時は[seedDefaultsForNewTeam]を使う。
+  final Future<void> Function(WidgetRef ref, String teamId)? seedDefaults;
 
   @override
   ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -65,6 +106,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     });
     try {
       final team = await ref.read(teamRepositoryProvider).createTeam(name);
+      final seed = widget.seedDefaults ?? seedDefaultsForNewTeam;
+      await seed(ref, team.id);
       if (!mounted) return;
       setState(() {
         _team = team;

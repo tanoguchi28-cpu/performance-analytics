@@ -68,18 +68,23 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// 選手選択ステップ（Supabaseの選手一覧取得）まで到達するテスト用に、
-  /// [OnboardingScreen.fetchRoster]を差し込める最小限のルーターでアプリを起動する。
+  /// Supabaseの実接続が必要な処理（選手名簿取得・新規チームへの初期データ投入）を
+  /// 差し込める最小限のルーターでアプリを起動する。未指定ならどちらも実接続無しの
+  /// no-op/空リストにフォールバックするため、Supabase接続無しのテスト環境でも
+  /// `_createTeam`/選手選択ステップまで問題なく進められる。
   Future<void> pumpAppWithRoster(
-    WidgetTester tester,
-    Future<List<Athlete>> Function(WidgetRef ref, String teamId) fetchRoster,
-  ) async {
+    WidgetTester tester, {
+    Future<List<Athlete>> Function(WidgetRef ref, String teamId)? fetchRoster,
+  }) async {
     final router = GoRouter(
       initialLocation: '/onboarding',
       routes: [
         GoRoute(
           path: '/onboarding',
-          builder: (_, __) => OnboardingScreen(fetchRoster: fetchRoster),
+          builder: (_, __) => OnboardingScreen(
+            fetchRoster: fetchRoster ?? (ref, teamId) async => const [],
+            seedDefaults: (ref, teamId) async {},
+          ),
         ),
         GoRoute(
           path: '/dashboard',
@@ -101,7 +106,7 @@ void main() {
   }
 
   testWidgets('新規チーム登録→役割選択(監督)でセッションが確定しダッシュボードへ進む', (tester) async {
-    await pumpApp(tester);
+    await pumpAppWithRoster(tester);
 
     await tester.tap(find.text('新規チーム登録（代表者の方）'));
     await tester.pumpAndSettle();
@@ -122,7 +127,7 @@ void main() {
     await tester.tap(find.text('はい'));
     await tester.pumpAndSettle();
 
-    expect(find.text('ダッシュボード'), findsWidgets);
+    expect(find.text('DASHBOARD_STUB'), findsOneWidget);
     expect(app_main.currentTeamSession?.teamId, 'TESTCODE');
     expect(app_main.currentTeamSession?.role.label, '監督');
   });
@@ -163,7 +168,7 @@ void main() {
 
   testWidgets('選手を選択→名簿が空なら専用の空状態が表示され先に進めない', (tester) async {
     await fakeTeamRepo.createTeam('参加先チーム');
-    await pumpAppWithRoster(tester, (ref, teamId) async => const []);
+    await pumpAppWithRoster(tester, fetchRoster: (ref, teamId) async => const []);
 
     await tester.tap(find.text('チームIDで参加'));
     await tester.pumpAndSettle();
@@ -185,7 +190,7 @@ void main() {
           AthletesCompanion.insert(id: 'a1', name: '横田向星', grade: 2, position: const Value('G')),
         );
     await fakeTeamRepo.createTeam('参加先チーム');
-    await pumpAppWithRoster(tester, (ref, teamId) => db.select(db.athletes).get());
+    await pumpAppWithRoster(tester, fetchRoster: (ref, teamId) => db.select(db.athletes).get());
 
     await tester.tap(find.text('チームIDで参加'));
     await tester.pumpAndSettle();
