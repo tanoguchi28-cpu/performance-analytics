@@ -1,0 +1,71 @@
+name: performance_analytics
+description: 高校バスケットボールチーム向け 体力測定・パフォーマンス分析アプリ
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State Management
+  flutter_riverpod: ^3.3.2
+  riverpod_annotation: ^4.0.3
+
+  # Navigation
+  go_router: ^17.3.0
+
+  # UI
+  cupertino_icons: ^1.0.8
+  fl_chart: ^1.2.0
+  cached_network_image: ^3.4.1
+  image_picker: ^1.2.3
+
+  # Local persistence
+  drift: ^2.34.1
+  path_provider: ^2.1.6
+  path: ^1.9.1
+  shared_preferences: ^2.5.5
+
+  # Excel import
+  excel: ^4.0.6
+  file_picker: ^11.0.2
+
+  # PDF report / print
+  pdf: ^3.12.0
+  printing: ^5.14.3
+
+  # Utils
+  intl: ^0.20.2
+  uuid: ^4.5.3
+
+  # Supabase移行スキャフォールド（未接続。docs/supabase_migration.md参照）
+  supabase_flutter: ^2.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.15.1
+  riverpod_generator: ^4.0.4
+  go_router_builder: ^4.3.0
+  drift_dev: ^2.34.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/seed/
+    - assets/fonts/
+
+flutter_launcher_icons:
+  android: true
+  image_path: "assets/icons/app_icon.png"
+  adaptive_icon_background: "#14315D"
+  adaptive_icon_foreground: "assets/icons/app_icon_foreground.png"
