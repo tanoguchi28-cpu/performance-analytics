@@ -3,7 +3,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/database/local_database.dart';
 import '../domain/athlete_repository.dart';
 
-/// チーム共有モード用の選手リポジトリ。全クエリを[_teamId]でスコープする。
+/// チーム共有モード用の選手リポジトリ。
+///
+/// `athletes`テーブルへの直接アクセス（PostgREST経由）はDB側で禁止しており、
+/// 全て`team_id`必須のRPC関数（`athletes_*`）経由で読み書きする。これにより
+/// 正しいチームIDを知らない限りデータへアクセスできない（docs/supabase_migration.md参照）。
 /// `athleteRepositoryProvider`（`local_athlete_repository.dart`）から
 /// チームセッションがある場合にのみ構築される。
 class SupabaseAthleteRepository implements AthleteRepository {
@@ -11,55 +15,59 @@ class SupabaseAthleteRepository implements AthleteRepository {
 
   final SupabaseClient _client;
   final String _teamId;
-  static const _table = 'athletes';
 
   @override
   Future<List<Athlete>> getAll({bool activeOnly = true}) async {
-    var query = _client.from(_table).select().eq('team_id', _teamId);
-    if (activeOnly) {
-      query = query.eq('is_active', true);
-    }
-    final rows = await query.order('name');
-    return rows.map(_fromRow).toList();
+    final rows = await _client.rpc<List<dynamic>>(
+      'athletes_list',
+      params: {'p_team_id': _teamId, 'p_active_only': activeOnly},
+    );
+    return rows.cast<Map<String, dynamic>>().map(_fromRow).toList();
   }
 
   @override
   Future<Athlete?> getById(String id) async {
-    final row = await _client
-        .from(_table)
-        .select()
-        .eq('team_id', _teamId)
-        .eq('id', id)
-        .maybeSingle();
-    return row == null ? null : _fromRow(row);
+    final rows = await _client.rpc<List<dynamic>>(
+      'athletes_get',
+      params: {'p_team_id': _teamId, 'p_id': id},
+    );
+    if (rows.isEmpty) return null;
+    return _fromRow(rows.single as Map<String, dynamic>);
   }
 
   @override
   Future<String> create(AthletesCompanion companion) async {
-    final row = _toRow(companion)..['team_id'] = _teamId;
-    final result = await _client.from(_table).insert(row).select().single();
-    return result['id'] as String;
+    final rows = await _client.rpc<List<dynamic>>(
+      'athletes_create',
+      params: {'p_team_id': _teamId, 'p_data': _toRow(companion)},
+    );
+    return (rows.single as Map<String, dynamic>)['id'] as String;
   }
 
   @override
   Future<void> update(String id, AthletesCompanion companion) async {
-    await _client.from(_table).update(_toRow(companion)).eq('team_id', _teamId).eq('id', id);
+    await _client.rpc<void>(
+      'athletes_update',
+      params: {'p_team_id': _teamId, 'p_id': id, 'p_patch': _toRow(companion)},
+    );
   }
 
   @override
   Future<void> deactivate(String id) async {
-    await _client
-        .from(_table)
-        .update({'is_active': false})
-        .eq('team_id', _teamId)
-        .eq('id', id);
+    await _client.rpc<void>(
+      'athletes_deactivate',
+      params: {'p_team_id': _teamId, 'p_id': id},
+    );
   }
 
   @override
   Future<void> delete(String id) async {
     // measurement_recordsのathlete_idはon delete cascade（docs/supabase_migration.md参照）
     // のため、選手の削除だけでよい。
-    await _client.from(_table).delete().eq('team_id', _teamId).eq('id', id);
+    await _client.rpc<void>(
+      'athletes_delete',
+      params: {'p_team_id': _teamId, 'p_id': id},
+    );
   }
 
   Athlete _fromRow(Map<String, dynamic> row) {

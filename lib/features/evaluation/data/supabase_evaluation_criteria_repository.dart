@@ -1,39 +1,36 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../../core/database/local_database.dart';
 import '../domain/evaluation_criteria_repository.dart';
 
-/// チーム共有モード用の評価基準リポジトリ。全クエリを[_teamId]でスコープする。
-/// `score_bands.team_id`は非正規化列で、DB側のトリガーが`criteria_id`から
-/// 自動セットするため、クライアントからは書き込まない（docs/supabase_migration.md参照）。
+/// チーム共有モード用の評価基準リポジトリ。
+///
+/// `evaluation_criteria`・`score_bands`テーブルへの直接アクセスはDB側で
+/// 禁止しており、全て`team_id`必須のRPC関数経由で読み書きする
+/// （docs/supabase_migration.md参照）。`score_bands.team_id`は非正規化列で、
+/// DB側のトリガーが`criteria_id`から自動セットするため、クライアントからは送らない。
 class SupabaseEvaluationCriteriaRepository implements EvaluationCriteriaRepository {
   SupabaseEvaluationCriteriaRepository(this._client, this._teamId);
 
   final SupabaseClient _client;
   final String _teamId;
-  static const _criteriaTable = 'evaluation_criteria';
-  static const _bandsTable = 'score_bands';
-  static const _uuid = Uuid();
 
   @override
   Future<List<EvaluationCriterion>> getCriteriaForItem(String itemKey) async {
-    final rows = await _client
-        .from(_criteriaTable)
-        .select()
-        .eq('team_id', _teamId)
-        .eq('item_key', itemKey);
-    return rows.map(_criterionFromRow).toList();
+    final rows = await _client.rpc<List<dynamic>>(
+      'evaluation_criteria_for_item',
+      params: {'p_team_id': _teamId, 'p_item_key': itemKey},
+    );
+    return rows.cast<Map<String, dynamic>>().map(_criterionFromRow).toList();
   }
 
   @override
   Future<List<ScoreBand>> getBands(String criteriaId) async {
-    final rows = await _client
-        .from(_bandsTable)
-        .select()
-        .eq('team_id', _teamId)
-        .eq('criteria_id', criteriaId);
-    return rows.map(_bandFromRow).toList();
+    final rows = await _client.rpc<List<dynamic>>(
+      'score_bands_for_criteria',
+      params: {'p_team_id': _teamId, 'p_criteria_id': criteriaId},
+    );
+    return rows.cast<Map<String, dynamic>>().map(_bandFromRow).toList();
   }
 
   @override
@@ -71,18 +68,26 @@ class SupabaseEvaluationCriteriaRepository implements EvaluationCriteriaReposito
     required String name,
     String? position,
   }) async {
-    final row = await _client
-        .from(_criteriaTable)
-        .insert({'team_id': _teamId, 'item_key': itemKey, 'name': name, 'position': position})
-        .select()
-        .single();
-    return row['id'] as String;
+    final rows = await _client.rpc<List<dynamic>>(
+      'evaluation_criteria_create',
+      params: {
+        'p_team_id': _teamId,
+        'p_item_key': itemKey,
+        'p_name': name,
+        'p_position': position,
+      },
+    );
+    return (rows.single as Map<String, dynamic>)['id'] as String;
   }
 
   @override
   Future<void> deleteCriterion(String id) async {
-    // score_bandsのcriteria_idにon delete cascadeを設定している前提（DDL参照）。
-    await _client.from(_criteriaTable).delete().eq('team_id', _teamId).eq('id', id);
+    // score_bandsのcriteria_idはon delete cascade（docs/supabase_migration.md参照）
+    // のため、基準セットの削除だけでよい。
+    await _client.rpc<void>(
+      'evaluation_criteria_delete',
+      params: {'p_team_id': _teamId, 'p_id': id},
+    );
   }
 
   @override
@@ -93,20 +98,26 @@ class SupabaseEvaluationCriteriaRepository implements EvaluationCriteriaReposito
     double? minValue,
     double? maxValue,
   }) async {
-    final bandId = id ?? _uuid.v4();
-    await _client.from(_bandsTable).upsert({
-      'id': bandId,
-      'criteria_id': criteriaId,
-      'score': score,
-      'min_value': minValue,
-      'max_value': maxValue,
-    });
-    return bandId;
+    final rows = await _client.rpc<List<dynamic>>(
+      'score_bands_upsert',
+      params: {
+        'p_team_id': _teamId,
+        'p_id': id,
+        'p_criteria_id': criteriaId,
+        'p_score': score,
+        'p_min_value': minValue,
+        'p_max_value': maxValue,
+      },
+    );
+    return (rows.single as Map<String, dynamic>)['id'] as String;
   }
 
   @override
   Future<void> deleteBand(String id) async {
-    await _client.from(_bandsTable).delete().eq('team_id', _teamId).eq('id', id);
+    await _client.rpc<void>(
+      'score_bands_delete',
+      params: {'p_team_id': _teamId, 'p_id': id},
+    );
   }
 
   EvaluationCriterion _criterionFromRow(Map<String, dynamic> row) {

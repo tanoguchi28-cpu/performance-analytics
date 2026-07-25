@@ -4,54 +4,59 @@ import '../../../core/constants/ability_category.dart';
 import '../../../core/database/local_database.dart';
 import '../domain/measurement_item_repository.dart';
 
-/// チーム共有モード用の測定項目リポジトリ。全クエリを[_teamId]でスコープする。
+/// チーム共有モード用の測定項目リポジトリ。
+///
+/// `measurement_items`テーブルへの直接アクセスはDB側で禁止しており、全て
+/// `team_id`必須のRPC関数（`measurement_items_*`）経由で読み書きする
+/// （docs/supabase_migration.md参照）。
 class SupabaseMeasurementItemRepository implements MeasurementItemRepository {
   SupabaseMeasurementItemRepository(this._client, this._teamId);
 
   final SupabaseClient _client;
   final String _teamId;
-  static const _table = 'measurement_items';
 
   @override
   Future<List<MeasurementItem>> getAll({bool activeOnly = true}) async {
-    var query = _client.from(_table).select().eq('team_id', _teamId);
-    if (activeOnly) {
-      query = query.eq('is_active', true);
-    }
-    final rows = await query.order('sort_order');
-    return rows.map(_fromRow).toList();
+    final rows = await _client.rpc<List<dynamic>>(
+      'measurement_items_list',
+      params: {'p_team_id': _teamId, 'p_active_only': activeOnly},
+    );
+    return rows.cast<Map<String, dynamic>>().map(_fromRow).toList();
   }
 
   @override
   Future<MeasurementItem?> getByKey(String key) async {
-    final row = await _client
-        .from(_table)
-        .select()
-        .eq('team_id', _teamId)
-        .eq('key', key)
-        .maybeSingle();
-    return row == null ? null : _fromRow(row);
+    final rows = await _client.rpc<List<dynamic>>(
+      'measurement_items_get_by_key',
+      params: {'p_team_id': _teamId, 'p_key': key},
+    );
+    if (rows.isEmpty) return null;
+    return _fromRow(rows.single as Map<String, dynamic>);
   }
 
   @override
   Future<String> create(MeasurementItemsCompanion companion) async {
-    final row = _toRow(companion)..['team_id'] = _teamId;
-    final result = await _client.from(_table).insert(row).select().single();
-    return result['id'] as String;
+    final rows = await _client.rpc<List<dynamic>>(
+      'measurement_items_create',
+      params: {'p_team_id': _teamId, 'p_data': _toRow(companion)},
+    );
+    return (rows.single as Map<String, dynamic>)['id'] as String;
   }
 
   @override
   Future<void> update(String id, MeasurementItemsCompanion companion) async {
-    await _client.from(_table).update(_toRow(companion)).eq('team_id', _teamId).eq('id', id);
+    await _client.rpc<void>(
+      'measurement_items_update',
+      params: {'p_team_id': _teamId, 'p_id': id, 'p_patch': _toRow(companion)},
+    );
   }
 
   @override
   Future<void> deactivate(String id) async {
-    await _client
-        .from(_table)
-        .update({'is_active': false})
-        .eq('team_id', _teamId)
-        .eq('id', id);
+    await _client.rpc<void>(
+      'measurement_items_deactivate',
+      params: {'p_team_id': _teamId, 'p_id': id},
+    );
   }
 
   MeasurementItem _fromRow(Map<String, dynamic> row) {
