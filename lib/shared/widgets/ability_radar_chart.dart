@@ -28,13 +28,19 @@ class AbilityRadarChart extends StatelessWidget {
       );
     }
 
+    // fl_chartの軸タイトルはCustomPaintの外側にクリップされずに描画されるため、
+    // 2行のタイトルテキストがsize×sizeの範囲をはみ出して直下のウィジェット
+    // （凡例など）と重なってしまう。radarRadiusはmin(width,height)/2*0.8で
+    // 決まるため、横幅はsizeのまま高さだけ広げれば見た目のチャート半径を
+    // 変えずに上下の食み出し分の安全マージンを確保できる。
     return SizedBox(
       width: size,
-      height: size,
+      height: size + 64,
       child: RadarChart(
         RadarChartData(
           radarShape: RadarShape.polygon,
           tickCount: 5,
+          titlePositionPercentageOffset: 0.12,
           radarBorderData: BorderSide(color: cs.outlineVariant),
           gridBorderData: BorderSide(color: cs.outlineVariant, width: 1),
           tickBorderData: const BorderSide(color: Colors.transparent),

@@ -94,7 +94,7 @@ class _PlayerTrendChartState extends State<PlayerTrendChart> {
                 reservedSize: 44,
                 getTitlesWidget: (value, meta) => Text(
                   '${value.toStringAsFixed(1)}${item.unit}',
-                  style: const TextStyle(fontSize: 10),
+                  style: const TextStyle(fontSize: 11),
                 ),
               ),
             ),
@@ -108,7 +108,7 @@ class _PlayerTrendChartState extends State<PlayerTrendChart> {
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       DateFormat('M/d').format(points[i].date),
-                      style: const TextStyle(fontSize: 10),
+                      style: const TextStyle(fontSize: 11),
                     ),
                   );
                 },

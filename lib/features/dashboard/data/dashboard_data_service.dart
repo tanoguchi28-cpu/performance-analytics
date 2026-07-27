@@ -64,6 +64,7 @@ Future<DashboardData> dashboardData(Ref ref) async {
     athleteById: athleteById,
     itemById: itemById,
     latestRecords: latestRecords,
+    measurementDate: latestSession?.measurementDate,
   );
 
   final changes = _buildAthleteChanges(
@@ -103,6 +104,7 @@ Future<DashboardData> dashboardData(Ref ref) async {
     missingAthletes: missingAthletes,
     significantDeclines: significantDeclines,
     completionTrend: completionTrend,
+    previousSessionDate: previousSession?.measurementDate,
   );
 }
 
@@ -156,6 +158,7 @@ List<RankingSection> _buildRankings({
   required Map<String, Athlete> athleteById,
   required Map<String, MeasurementItem> itemById,
   required List<MeasurementRecord> latestRecords,
+  required DateTime? measurementDate,
 }) {
   final itemByKey = {for (final i in itemById.values) i.key: i};
   final result = <RankingSection>[];
@@ -182,6 +185,7 @@ List<RankingSection> _buildRankings({
           for (var i = 0; i < entries.length && i < 5; i++)
             RankedValue(athlete: entries[i].athlete!, value: entries[i].value, rank: i + 1),
         ],
+        measurementDate: measurementDate,
       ),
     );
   }

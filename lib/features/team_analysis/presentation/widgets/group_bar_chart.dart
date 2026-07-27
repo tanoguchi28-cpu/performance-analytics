@@ -37,7 +37,7 @@ class GroupBarChart extends StatelessWidget {
                 showTitles: true,
                 reservedSize: 40,
                 getTitlesWidget: (value, meta) =>
-                    Text(value.toStringAsFixed(1), style: const TextStyle(fontSize: 9)),
+                    Text(value.toStringAsFixed(1), style: const TextStyle(fontSize: 10)),
               ),
             ),
             bottomTitles: AxisTitles(
@@ -52,7 +52,7 @@ class GroupBarChart extends StatelessWidget {
                     child: Text(
                       '${groups[i].label}\n(n=${groups[i].count})',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 10),
+                      style: const TextStyle(fontSize: 11),
                     ),
                   );
                 },
@@ -63,7 +63,7 @@ class GroupBarChart extends StatelessWidget {
             touchTooltipData: BarTouchTooltipData(
               getTooltipItem: (group, groupIndex, rod, rodIndex) => BarTooltipItem(
                 '${rod.toY.toStringAsFixed(1)}$unit',
-                const TextStyle(color: Colors.white, fontSize: 11),
+                const TextStyle(color: Colors.white, fontSize: 12),
               ),
             ),
           ),

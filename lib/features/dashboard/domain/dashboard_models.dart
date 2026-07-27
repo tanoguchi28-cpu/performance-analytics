@@ -17,12 +17,16 @@ class RankingSection {
     required this.itemName,
     required this.unit,
     required this.entries,
+    this.measurementDate,
   });
 
   final String itemKey;
   final String itemName;
   final String unit;
   final List<RankedValue> entries;
+
+  /// このランキングの算出に使った測定日（最新セッション基準）。
+  final DateTime? measurementDate;
 }
 
 /// 前回セッションとの比較による選手ごとの変化量（改善ランキング・アラート用）。
@@ -86,6 +90,7 @@ class DashboardData {
     required this.missingAthletes,
     required this.significantDeclines,
     required this.completionTrend,
+    this.previousSessionDate,
   });
 
   final DashboardSummary summary;
@@ -98,6 +103,10 @@ class DashboardData {
 
   /// 前回比低下TOP10（改善率が低い順）。
   final List<AthleteChange> topDeclined;
+
+  /// 前回比の比較元セッションの測定日（無ければnull）。比較先は
+  /// [summary.latestSessionDate]。
+  final DateTime? previousSessionDate;
 
   /// 最新セッションで測定漏れがある選手。
   final List<Athlete> missingAthletes;

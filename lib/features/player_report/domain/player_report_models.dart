@@ -53,6 +53,7 @@ class PlayerReportData {
     required this.overallRankingTeamSize,
     required this.results,
     required this.historyByItemKey,
+    this.latestSessionDate,
   });
 
   final Athlete athlete;
@@ -67,4 +68,7 @@ class PlayerReportData {
 
   /// key = MeasurementItem.key。日付昇順。
   final Map<String, List<TrendPoint>> historyByItemKey;
+
+  /// [results]の「記録」列が基づく最新セッションの測定日。
+  final DateTime? latestSessionDate;
 }

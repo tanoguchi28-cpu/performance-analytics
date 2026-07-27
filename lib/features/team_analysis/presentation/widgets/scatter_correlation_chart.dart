@@ -37,21 +37,21 @@ class ScatterCorrelationChart extends StatelessWidget {
             topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
             rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
             leftTitles: AxisTitles(
-              axisNameWidget: Text(yLabel, style: const TextStyle(fontSize: 11)),
+              axisNameWidget: Text(yLabel, style: const TextStyle(fontSize: 12)),
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 40,
                 getTitlesWidget: (value, meta) =>
-                    Text(value.toStringAsFixed(1), style: const TextStyle(fontSize: 9)),
+                    Text(value.toStringAsFixed(1), style: const TextStyle(fontSize: 10)),
               ),
             ),
             bottomTitles: AxisTitles(
-              axisNameWidget: Text(xLabel, style: const TextStyle(fontSize: 11)),
+              axisNameWidget: Text(xLabel, style: const TextStyle(fontSize: 12)),
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 28,
                 getTitlesWidget: (value, meta) =>
-                    Text(value.toStringAsFixed(1), style: const TextStyle(fontSize: 9)),
+                    Text(value.toStringAsFixed(1), style: const TextStyle(fontSize: 10)),
               ),
             ),
           ),
@@ -62,7 +62,7 @@ class ScatterCorrelationChart extends StatelessWidget {
                 final name = i == -1 ? '' : points[i].athlete.name;
                 return ScatterTooltipItem(
                   '$name\n(${spot.x.toStringAsFixed(1)}, ${spot.y.toStringAsFixed(1)})',
-                  textStyle: const TextStyle(color: Colors.white, fontSize: 11),
+                  textStyle: const TextStyle(color: Colors.white, fontSize: 12),
                 );
               },
             ),

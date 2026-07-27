@@ -112,5 +112,6 @@ Future<PlayerReportData> playerReport(Ref ref, {required String athleteId}) asyn
     overallRankingTeamSize: overallRanking.isEmpty ? null : overallRanking.length,
     results: results,
     historyByItemKey: historyByItemKey,
+    latestSessionDate: latestSession?.measurementDate,
   );
 }

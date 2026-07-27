@@ -120,6 +120,8 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
                   onSelectionChanged: (s) => setState(() => _mode = s.first),
                 ),
               ),
+              // 測定日は各行の数値の横に表示するため（総合順位モードでも分かるように
+              // 一箇所にまとめず行ごとに出す）、ここでの画面上部への一括表示はしない。
               if (_mode == _RankingMode.byItem && data.items.isNotEmpty) ...[
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -133,17 +135,6 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
                     onChanged: (v) => setState(() => _selectedItemId = v),
                   ),
                 ),
-                if (data.measurementDate != null)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        '測定日: ${DateFormat('yyyy/MM/dd').format(data.measurementDate!)}',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ),
-                  ),
               ],
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -200,6 +191,9 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
             athlete: e.athlete,
             valueLabel: '偏差値相当 ${e.averageDeviationScore.toStringAsFixed(1)}',
             subLabel: '${e.itemCount}項目の平均',
+            dateLabel: data.measurementDate == null
+                ? null
+                : DateFormat('yyyy/MM/dd').format(data.measurementDate!),
           );
         },
       );
@@ -226,6 +220,9 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
           rank: e.rank,
           athlete: e.athlete,
           valueLabel: '${e.value} ${item.unit}',
+          dateLabel: data.measurementDate == null
+              ? null
+              : DateFormat('yyyy/MM/dd').format(data.measurementDate!),
         );
       },
     );
@@ -244,12 +241,17 @@ class _RankingTile extends StatelessWidget {
     required this.athlete,
     required this.valueLabel,
     this.subLabel,
+    this.dateLabel,
   });
 
   final int rank;
   final Athlete athlete;
   final String valueLabel;
   final String? subLabel;
+
+  /// この記録の測定日。2回目以降の測定があると値だけでは「いつの記録か」
+  /// 分からなくなるため、値の下に併記する。
+  final String? dateLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -294,6 +296,11 @@ class _RankingTile extends StatelessWidget {
                 Text(valueLabel, style: const TextStyle(fontWeight: FontWeight.bold)),
                 if (subLabel != null)
                   Text(subLabel!, style: Theme.of(context).textTheme.bodySmall),
+                if (dateLabel != null)
+                  Text(
+                    dateLabel!,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                  ),
               ],
             ),
           ],

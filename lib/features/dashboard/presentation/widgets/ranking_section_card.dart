@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../domain/dashboard_models.dart';
 
@@ -45,7 +46,27 @@ class _RankingList extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(section.itemName, style: Theme.of(context).textTheme.labelLarge),
+          Row(
+            children: [
+              Flexible(
+                child: Text(
+                  section.itemName,
+                  style: Theme.of(context).textTheme.labelLarge,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (section.measurementDate != null) ...[
+                const SizedBox(width: 6),
+                Text(
+                  '(${DateFormat('M/d').format(section.measurementDate!)})',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+              ],
+            ],
+          ),
           const SizedBox(height: 4),
           if (section.entries.isEmpty)
             Text('データなし', style: Theme.of(context).textTheme.bodySmall)

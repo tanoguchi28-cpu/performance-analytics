@@ -62,7 +62,7 @@ class PlayerReportScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  PlayerResultsTable(results: data.results),
+                  PlayerResultsTable(results: data.results, latestSessionDate: data.latestSessionDate),
                   const SizedBox(height: 16),
                   PlayerTrendChart(
                     items: [for (final r in data.results) r.item],

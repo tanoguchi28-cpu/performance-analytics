@@ -125,7 +125,7 @@ class _BoxPlotPainter extends CustomPainter {
       final tp = TextPainter(
         text: TextSpan(
           text: label,
-          style: TextStyle(fontSize: 10, color: textColor),
+          style: TextStyle(fontSize: 11, color: textColor),
         ),
         textAlign: TextAlign.center,
         textDirection: TextDirection.ltr,

@@ -56,7 +56,7 @@ class CompletionTrendCard extends StatelessWidget {
                               padding: const EdgeInsets.only(top: 4),
                               child: Text(
                                 DateFormat('M/d').format(trend[i].measurementDate),
-                                style: const TextStyle(fontSize: 10),
+                                style: const TextStyle(fontSize: 11),
                               ),
                             );
                           },

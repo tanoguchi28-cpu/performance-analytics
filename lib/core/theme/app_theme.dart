@@ -3,6 +3,24 @@ import 'package:flutter/material.dart';
 class AppTheme {
   static const _seedColor = Color(0xFFEA580C);
 
+  /// 見出し・データラベルはやや太めに、本文は既定のまま読みやすさを保つ。
+  /// 色はMaterial3のデフォルト（ColorSchemeから自動適用）に任せ、ここでは
+  /// サイズ・太さ・字間のみを明示的に統一する（widget側の生TextStyleが
+  /// 各所でバラついていたのを、ここを唯一の基準にして揃えていく）。
+  static const _textTheme = TextTheme(
+    headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.5),
+    headlineSmall: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.3),
+    titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+    titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+    titleSmall: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+    bodyLarge: TextStyle(fontSize: 16, height: 1.4),
+    bodyMedium: TextStyle(fontSize: 14, height: 1.4),
+    bodySmall: TextStyle(fontSize: 12, height: 1.35),
+    labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 0.1),
+    labelMedium: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+    labelSmall: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+  );
+
   static ThemeData light() {
     final cs = ColorScheme.fromSeed(
       seedColor: _seedColor,
@@ -23,6 +41,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: cs,
+      textTheme: _textTheme,
       appBarTheme: AppBarTheme(
         backgroundColor: cs.surface,
         surfaceTintColor: Colors.transparent,

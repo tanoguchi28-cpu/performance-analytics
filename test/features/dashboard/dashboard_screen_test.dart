@@ -50,8 +50,17 @@ void main() {
     expect(find.text('1名'), findsOneWidget); // 登録選手数
     expect(find.text('チーム能力'), findsOneWidget);
     expect(find.text('種目別ランキング TOP5'), findsOneWidget);
-    expect(find.textContaining('横田向星'), findsWidgets); // 垂直跳びランキング・測定漏れアラートに登場
+    expect(find.textContaining('横田向星'), findsWidgets); // 垂直跳びランキングに登場
     expect(find.text('アラート'), findsOneWidget);
     expect(find.text('測定実施率の推移'), findsOneWidget);
+
+    // アラートは既定で折りたたまれているため、タップして展開してから中身を確認する
+    // （スクロール領域内にあるため、タップ前に表示位置までスクロールする）。
+    await tester.ensureVisible(find.text('アラート'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('アラート'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('測定漏れ'), findsOneWidget);
+    expect(find.textContaining('横田向星'), findsWidgets); // 展開後は測定漏れアラートにも登場
   });
 }

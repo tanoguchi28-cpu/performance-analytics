@@ -39,11 +39,15 @@ class DashboardScreen extends ConsumerWidget {
                 ImprovementRankingCard(
                   topImproved: data.topImproved,
                   topDeclined: data.topDeclined,
+                  previousDate: data.previousSessionDate,
+                  latestDate: data.summary.latestSessionDate,
                 ),
                 const SizedBox(height: 16),
                 AlertsCard(
                   missingAthletes: data.missingAthletes,
                   significantDeclines: data.significantDeclines,
+                  previousDate: data.previousSessionDate,
+                  latestDate: data.summary.latestSessionDate,
                 ),
                 const SizedBox(height: 16),
                 CompletionTrendCard(trend: data.completionTrend),

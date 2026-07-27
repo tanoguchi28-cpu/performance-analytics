@@ -38,7 +38,7 @@ class HistogramChart extends StatelessWidget {
                 reservedSize: 28,
                 interval: 1,
                 getTitlesWidget: (value, meta) =>
-                    Text(value.toInt().toString(), style: const TextStyle(fontSize: 10)),
+                    Text(value.toInt().toString(), style: const TextStyle(fontSize: 11)),
               ),
             ),
             bottomTitles: AxisTitles(
@@ -52,7 +52,7 @@ class HistogramChart extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       bins[i].from.toStringAsFixed(1),
-                      style: const TextStyle(fontSize: 9),
+                      style: const TextStyle(fontSize: 10),
                     ),
                   );
                 },

@@ -41,7 +41,7 @@ class CorrelationHeatmap extends StatelessWidget {
                       alignment: Alignment.bottomLeft,
                       child: Text(
                         item.name,
-                        style: const TextStyle(fontSize: 10),
+                        style: const TextStyle(fontSize: 11),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -59,7 +59,7 @@ class CorrelationHeatmap extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: Text(
                       matrix.items[row].name,
-                      style: const TextStyle(fontSize: 11),
+                      style: const TextStyle(fontSize: 12),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -98,7 +98,7 @@ class _HeatmapCell extends StatelessWidget {
       child: Text(
         v == null ? '-' : v.toStringAsFixed(2),
         style: TextStyle(
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: v != null && v.abs() >= 0.7 ? FontWeight.bold : FontWeight.normal,
         ),
       ),

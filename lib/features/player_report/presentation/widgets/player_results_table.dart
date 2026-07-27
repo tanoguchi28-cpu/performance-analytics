@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/player_report_models.dart';
 
 class PlayerResultsTable extends StatelessWidget {
-  const PlayerResultsTable({super.key, required this.results});
+  const PlayerResultsTable({super.key, required this.results, this.latestSessionDate});
 
   final List<PlayerResultRow> results;
+
+  /// 「記録」列の値がいつの測定かを示す測定日。
+  final DateTime? latestSessionDate;
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +20,27 @@ class PlayerResultsTable extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('測定結果一覧', style: Theme.of(context).textTheme.titleMedium),
+            Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    '測定結果一覧',
+                    style: Theme.of(context).textTheme.titleMedium,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (latestSessionDate != null) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '(${DateFormat('yyyy/MM/dd').format(latestSessionDate!)})',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ],
+            ),
             const SizedBox(height: 8),
             Table(
               columnWidths: const {
