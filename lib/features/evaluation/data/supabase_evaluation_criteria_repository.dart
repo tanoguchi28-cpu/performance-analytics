@@ -9,28 +9,51 @@ import '../domain/evaluation_criteria_repository.dart';
 /// 禁止しており、全て`team_id`必須のRPC関数経由で読み書きする
 /// （docs/supabase_migration.md参照）。`score_bands.team_id`は非正規化列で、
 /// DB側のトリガーが`criteria_id`から自動セットするため、クライアントからは送らない。
+///
+/// 評価基準・得点帯は選手数×項目数分[evaluate]から繰り返し参照される。ローカル版
+/// （[LocalEvaluationCriteriaRepository]）と同様にitemKey単位・criteriaId単位で
+/// メモリキャッシュし、変更系メソッド完了時に破棄することで、ダッシュボード等を
+/// 開くたびに同じRPCをN+1回ネットワーク越しに叩くのを防ぐ。
 class SupabaseEvaluationCriteriaRepository implements EvaluationCriteriaRepository {
   SupabaseEvaluationCriteriaRepository(this._client, this._teamId);
 
   final SupabaseClient _client;
   final String _teamId;
 
+  final _criteriaCache = <String, List<EvaluationCriterion>>{};
+  final _bandsCache = <String, List<ScoreBand>>{};
+
+  void _invalidateCache() {
+    _criteriaCache.clear();
+    _bandsCache.clear();
+  }
+
   @override
   Future<List<EvaluationCriterion>> getCriteriaForItem(String itemKey) async {
+    final cached = _criteriaCache[itemKey];
+    if (cached != null) return cached;
+
     final rows = await _client.rpc<List<dynamic>>(
       'evaluation_criteria_for_item',
       params: {'p_team_id': _teamId, 'p_item_key': itemKey},
     );
-    return rows.cast<Map<String, dynamic>>().map(_criterionFromRow).toList();
+    final result = rows.cast<Map<String, dynamic>>().map(_criterionFromRow).toList();
+    _criteriaCache[itemKey] = result;
+    return result;
   }
 
   @override
   Future<List<ScoreBand>> getBands(String criteriaId) async {
+    final cached = _bandsCache[criteriaId];
+    if (cached != null) return cached;
+
     final rows = await _client.rpc<List<dynamic>>(
       'score_bands_for_criteria',
       params: {'p_team_id': _teamId, 'p_criteria_id': criteriaId},
     );
-    return rows.cast<Map<String, dynamic>>().map(_bandFromRow).toList();
+    final result = rows.cast<Map<String, dynamic>>().map(_bandFromRow).toList();
+    _bandsCache[criteriaId] = result;
+    return result;
   }
 
   @override
@@ -77,6 +100,7 @@ class SupabaseEvaluationCriteriaRepository implements EvaluationCriteriaReposito
         'p_position': position,
       },
     );
+    _invalidateCache();
     return (rows.single as Map<String, dynamic>)['id'] as String;
   }
 
@@ -88,6 +112,7 @@ class SupabaseEvaluationCriteriaRepository implements EvaluationCriteriaReposito
       'evaluation_criteria_delete',
       params: {'p_team_id': _teamId, 'p_id': id},
     );
+    _invalidateCache();
   }
 
   @override
@@ -109,6 +134,7 @@ class SupabaseEvaluationCriteriaRepository implements EvaluationCriteriaReposito
         'p_max_value': maxValue,
       },
     );
+    _invalidateCache();
     return (rows.single as Map<String, dynamic>)['id'] as String;
   }
 
@@ -118,6 +144,7 @@ class SupabaseEvaluationCriteriaRepository implements EvaluationCriteriaReposito
       'score_bands_delete',
       params: {'p_team_id': _teamId, 'p_id': id},
     );
+    _invalidateCache();
   }
 
   EvaluationCriterion _criterionFromRow(Map<String, dynamic> row) {

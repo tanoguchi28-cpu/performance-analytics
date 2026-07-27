@@ -189,17 +189,20 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
     var importedValues = 0;
     var skippedCells = 0;
 
-    // 氏名で既存選手を照合するキャッシュ（新規作成した選手もここに追加していく）
-    final athleteByName = {for (final a in _existingAthletes) a.name.trim(): a};
+    // 氏名で既存選手を照合するキャッシュ（新規作成した選手もここに追加していく）。
+    // 作成直後のgetById再取得はネットワーク往復を無駄に増やすだけなので、
+    // create()が返すidだけを保持する（後続行での重複名照合にはidで十分）。
+    final athleteIdByName = {for (final a in _existingAthletes) a.name.trim(): a.id};
 
     for (final row in _parsedRows) {
       skippedCells += row.skippedCellCount;
       final name = row.athleteName?.trim();
       if (name == null || name.isEmpty) continue;
 
-      var athlete = athleteByName[name];
-      if (athlete == null) {
-        final id = await athleteRepo.create(
+      String athleteId;
+      final existingId = athleteIdByName[name];
+      if (existingId == null) {
+        athleteId = await athleteRepo.create(
           AthletesCompanion(
             name: Value(name),
             // gradeはUIから廃止済み。NOT NULL制約を満たすための内部固定値。
@@ -207,23 +210,20 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
             position: Value(row.position),
           ),
         );
-        athlete = await athleteRepo.getById(id);
-        if (athlete != null) athleteByName[name] = athlete;
+        athleteIdByName[name] = athleteId;
         createdAthletes++;
       } else {
+        athleteId = existingId;
         matchedAthletes++;
       }
 
-      if (athlete == null) continue;
-      for (final entry in row.values.entries) {
-        await measurementRepo.upsertRecord(
-          athleteId: athlete.id,
-          sessionId: sessionId,
-          itemId: entry.key,
-          value: entry.value,
-        );
-        importedValues++;
-      }
+      await Future.wait(row.values.entries.map((entry) => measurementRepo.upsertRecord(
+            athleteId: athleteId,
+            sessionId: sessionId,
+            itemId: entry.key,
+            value: entry.value,
+          )));
+      importedValues += row.values.length;
     }
 
     if (!mounted) return;

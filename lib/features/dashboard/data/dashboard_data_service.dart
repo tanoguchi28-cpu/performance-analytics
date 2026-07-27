@@ -139,20 +139,17 @@ Future<AbilityProfile> _buildTeamAbilityProfile({
   required List<MeasurementRecord> latestRecords,
   required EvaluationCriteriaRepository criteriaRepo,
 }) async {
-  final profiles = <AbilityProfile>[];
-  for (final athlete in athletes) {
+  final profiles = await Future.wait(athletes.map((athlete) async {
     final athleteRecords = latestRecords.where((r) => r.athleteId == athlete.id).toList();
-    if (athleteRecords.isEmpty) continue;
-    profiles.add(
-      await computeAthleteAbilityProfile(
-        items: items,
-        criteriaRepo: criteriaRepo,
-        athleteRecords: athleteRecords,
-        position: athlete.position,
-      ),
+    if (athleteRecords.isEmpty) return null;
+    return computeAthleteAbilityProfile(
+      items: items,
+      criteriaRepo: criteriaRepo,
+      athleteRecords: athleteRecords,
+      position: athlete.position,
     );
-  }
-  return AbilityProfile.average(profiles);
+  }));
+  return AbilityProfile.average(profiles.whereType<AbilityProfile>().toList());
 }
 
 List<RankingSection> _buildRankings({
@@ -237,17 +234,13 @@ Future<List<CompletionTrendPoint>> _buildCompletionTrend({
 }) async {
   if (sessions.isEmpty || athleteCount == 0 || itemCount == 0) return [];
 
-  final recentSessions = sessions.take(_completionTrendSessionLimit).toList().reversed;
-  final points = <CompletionTrendPoint>[];
-  for (final session in recentSessions) {
+  final recentSessions = sessions.take(_completionTrendSessionLimit).toList().reversed.toList();
+  return Future.wait(recentSessions.map((session) async {
     final records = await measurementRepo.getRecordsForSession(session.id);
-    points.add(
-      CompletionTrendPoint(
-        sessionId: session.id,
-        measurementDate: session.measurementDate,
-        completionRate: (records.length / (athleteCount * itemCount)).clamp(0.0, 1.0),
-      ),
+    return CompletionTrendPoint(
+      sessionId: session.id,
+      measurementDate: session.measurementDate,
+      completionRate: (records.length / (athleteCount * itemCount)).clamp(0.0, 1.0),
     );
-  }
-  return points;
+  }));
 }
