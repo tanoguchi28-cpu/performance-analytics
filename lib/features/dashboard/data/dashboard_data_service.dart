@@ -104,7 +104,30 @@ Future<DashboardData> dashboardData(Ref ref) async {
     missingAthletes: missingAthletes,
     significantDeclines: significantDeclines,
     completionTrend: completionTrend,
+    sessions: sessions,
     previousSessionDate: previousSession?.measurementDate,
+  );
+}
+
+/// 指定セッション時点のチーム能力プロファイル。ダッシュボードの「チーム能力」
+/// カードは既定で最新セッション（[dashboardData]が計算済みのもの）を表示するが、
+/// ユーザーが別のセッションを選んだ場合にこのproviderで都度計算し直す。
+@riverpod
+Future<AbilityProfile> teamAbilityProfileForSession(Ref ref, {required String sessionId}) async {
+  final athleteRepo = ref.watch(athleteRepositoryProvider);
+  final itemRepo = ref.watch(measurementItemRepositoryProvider);
+  final measurementRepo = ref.watch(measurementRepositoryProvider);
+  final criteriaRepo = ref.watch(evaluationCriteriaRepositoryProvider);
+
+  final athletes = await athleteRepo.getAll();
+  final items = await itemRepo.getAll();
+  final records = await measurementRepo.getRecordsForSession(sessionId);
+
+  return _buildTeamAbilityProfile(
+    athletes: athletes,
+    items: items,
+    latestRecords: records,
+    criteriaRepo: criteriaRepo,
   );
 }
 

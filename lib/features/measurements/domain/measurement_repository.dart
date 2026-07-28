@@ -12,6 +12,14 @@ abstract class MeasurementRepository {
     String? note,
   });
 
+  /// 既存セッションの測定日・ラベル・メモを更新する。
+  Future<void> updateSession({
+    required String id,
+    required DateTime measurementDate,
+    String? label,
+    String? note,
+  });
+
   /// 測定セッションを削除する。所属する全選手・全項目の記録もまとめて削除する
   /// （Excelインポートを丸ごとやり直したい場合等に使う）。この操作は取り消せない。
   Future<void> deleteSession(String id);

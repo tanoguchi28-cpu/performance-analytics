@@ -64,7 +64,7 @@ final class PlayerReportProvider
   }
 }
 
-String _$playerReportHash() => r'e553f7afa2d36cbc10e7bdabc303fdc9b96a92b2';
+String _$playerReportHash() => r'ee26e3452829826ceed0b7998a44d406c272082e';
 
 final class PlayerReportFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<PlayerReportData>, String> {

@@ -63,6 +63,22 @@ class LocalMeasurementRepository implements MeasurementRepository {
   }
 
   @override
+  Future<void> updateSession({
+    required String id,
+    required DateTime measurementDate,
+    String? label,
+    String? note,
+  }) async {
+    await (_db.update(_db.measurementSessions)..where((t) => t.id.equals(id))).write(
+      MeasurementSessionsCompanion(
+        measurementDate: Value(measurementDate),
+        label: Value(label),
+        note: Value(note),
+      ),
+    );
+  }
+
+  @override
   Future<void> deleteSession(String id) async {
     await _db.transaction(() async {
       await (_db.delete(_db.measurementRecords)..where((t) => t.sessionId.equals(id))).go();

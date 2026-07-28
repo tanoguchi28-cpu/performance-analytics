@@ -106,6 +106,12 @@ GoRouter appRouter(Ref ref) {
                 ),
                 routes: [
                   GoRoute(
+                    path: 'edit',
+                    builder: (_, state) => MeasurementSessionFormScreen(
+                      sessionId: state.pathParameters['sessionId'],
+                    ),
+                  ),
+                  GoRoute(
                     path: 'athletes/:athleteId',
                     builder: (_, state) => MeasurementEntryScreen(
                       sessionId: state.pathParameters['sessionId']!,

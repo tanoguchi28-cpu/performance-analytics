@@ -32,7 +32,7 @@ class DashboardScreen extends ConsumerWidget {
               children: [
                 _SummaryRow(summary: data.summary),
                 const SizedBox(height: 16),
-                TeamAbilityCard(profile: data.teamAbilityProfile),
+                TeamAbilityCard(profile: data.teamAbilityProfile, sessions: data.sessions),
                 const SizedBox(height: 16),
                 RankingSectionCard(rankings: data.rankings),
                 const SizedBox(height: 16),

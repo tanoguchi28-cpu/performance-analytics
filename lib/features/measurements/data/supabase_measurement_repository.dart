@@ -54,6 +54,25 @@ class SupabaseMeasurementRepository implements MeasurementRepository {
   }
 
   @override
+  Future<void> updateSession({
+    required String id,
+    required DateTime measurementDate,
+    String? label,
+    String? note,
+  }) async {
+    await _client.rpc<void>(
+      'measurement_sessions_update',
+      params: {
+        'p_team_id': _teamId,
+        'p_id': id,
+        'p_measurement_date': measurementDate.toIso8601String().substring(0, 10),
+        'p_label': label,
+        'p_note': note,
+      },
+    );
+  }
+
+  @override
   Future<void> deleteSession(String id) async {
     // measurement_recordsのsession_idはon delete cascade（docs/supabase_migration.md参照）
     // のため、セッションの削除だけでよい。

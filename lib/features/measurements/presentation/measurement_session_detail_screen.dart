@@ -114,12 +114,21 @@ class _MeasurementSessionDetailScreenState
       appBar: AppBar(
         title: const Text('選手別入力状況'),
         actions: [
-          if (canEdit)
+          if (canEdit) ...[
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'セッションを編集',
+              onPressed: () async {
+                await context.push('/measurements/${widget.sessionId}/edit');
+                if (mounted) await _refresh();
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.delete_outline),
               tooltip: 'セッションを削除',
               onPressed: _confirmAndDelete,
             ),
+          ],
         ],
       ),
       body: FutureBuilder<_SessionData>(

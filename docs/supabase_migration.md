@@ -297,6 +297,14 @@ begin
 end;
 $$;
 
+create or replace function measurement_sessions_update(p_team_id text, p_id uuid, p_measurement_date date, p_label text, p_note text)
+returns void
+language sql security definer set search_path = public as $$
+  update measurement_sessions
+  set measurement_date = p_measurement_date, label = p_label, note = p_note
+  where team_id = p_team_id and id = p_id;
+$$;
+
 create or replace function measurement_sessions_delete(p_team_id text, p_id uuid)
 returns void
 language sql security definer set search_path = public as $$
@@ -435,6 +443,7 @@ grant execute on function measurement_items_deactivate(text, uuid) to authentica
 grant execute on function measurement_sessions_list(text) to authenticated;
 grant execute on function measurement_sessions_get(text, uuid) to authenticated;
 grant execute on function measurement_sessions_create(text, date, text, text) to authenticated;
+grant execute on function measurement_sessions_update(text, uuid, date, text, text) to authenticated;
 grant execute on function measurement_sessions_delete(text, uuid) to authenticated;
 
 grant execute on function measurement_records_upsert(text, uuid, uuid, uuid, double precision) to authenticated;

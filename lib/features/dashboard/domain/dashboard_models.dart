@@ -90,11 +90,15 @@ class DashboardData {
     required this.missingAthletes,
     required this.significantDeclines,
     required this.completionTrend,
+    required this.sessions,
     this.previousSessionDate,
   });
 
   final DashboardSummary summary;
   final AbilityProfile teamAbilityProfile;
+
+  /// 測定セッション一覧（測定日降順）。「チーム能力」カードのセッション選択に使う。
+  final List<MeasurementSession> sessions;
 
   final List<RankingSection> rankings;
 

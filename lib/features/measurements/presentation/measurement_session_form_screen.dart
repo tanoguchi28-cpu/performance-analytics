@@ -6,9 +6,12 @@ import 'package:intl/intl.dart';
 import '../../team_session/data/team_session_provider.dart';
 import '../data/local_measurement_repository.dart';
 
-/// 測定セッション（測定実施日）の新規作成フォーム。
+/// 測定セッション（測定実施日）の新規作成・編集フォーム。
+/// [sessionId]を渡すと編集モードになる。
 class MeasurementSessionFormScreen extends ConsumerStatefulWidget {
-  const MeasurementSessionFormScreen({super.key});
+  const MeasurementSessionFormScreen({super.key, this.sessionId});
+
+  final String? sessionId;
 
   @override
   ConsumerState<MeasurementSessionFormScreen> createState() =>
@@ -20,7 +23,35 @@ class _MeasurementSessionFormScreenState
   final _labelController = TextEditingController();
   final _noteController = TextEditingController();
   DateTime _measurementDate = DateTime.now();
+  bool _loading = true;
   bool _saving = false;
+
+  bool get _isEditing => widget.sessionId != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    if (!_isEditing) {
+      setState(() => _loading = false);
+      return;
+    }
+    final session =
+        await ref.read(measurementRepositoryProvider).getSession(widget.sessionId!);
+    if (session != null && mounted) {
+      _labelController.text = session.label ?? '';
+      _noteController.text = session.note ?? '';
+      setState(() {
+        _measurementDate = session.measurementDate;
+        _loading = false;
+      });
+    } else if (mounted) {
+      setState(() => _loading = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -41,24 +72,46 @@ class _MeasurementSessionFormScreenState
 
   Future<void> _submit() async {
     setState(() => _saving = true);
-    await ref.read(measurementRepositoryProvider).createSession(
+    final repo = ref.read(measurementRepositoryProvider);
+    final label =
+        _labelController.text.trim().isEmpty ? null : _labelController.text.trim();
+    final note = _noteController.text.trim().isEmpty ? null : _noteController.text.trim();
+
+    try {
+      if (_isEditing) {
+        await repo.updateSession(
+          id: widget.sessionId!,
           measurementDate: _measurementDate,
-          label: _labelController.text.trim().isEmpty
-              ? null
-              : _labelController.text.trim(),
-          note: _noteController.text.trim().isEmpty
-              ? null
-              : _noteController.text.trim(),
+          label: label,
+          note: note,
         );
+      } else {
+        await repo.createSession(
+          measurementDate: _measurementDate,
+          label: label,
+          note: note,
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('保存に失敗しました。通信環境を確認してもう一度お試しください')),
+      );
+      return;
+    }
     if (mounted) context.pop();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     final canEdit = ref.watch(canEditProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('測定セッションを作成')),
+      appBar: AppBar(title: Text(_isEditing ? '測定セッションを編集' : '測定セッションを作成')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -97,7 +150,7 @@ class _MeasurementSessionFormScreenState
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('作成する'),
+                      : Text(_isEditing ? '更新する' : '作成する'),
                 ),
               ],
             ),

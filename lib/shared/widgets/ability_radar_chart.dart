@@ -4,9 +4,17 @@ import 'package:flutter/material.dart';
 import '../../features/evaluation/domain/ability_profile.dart';
 
 /// 選手の6能力カテゴリ評価をレーダーチャートで表示する。
-/// 未測定（評価なし）のカテゴリは軸ごと表示しない。
-/// fl_chartのRadarChartは3軸未満を描画できないため、評価済みが2項目以下の
-/// 場合はチャートの代わりに案内メッセージを表示する。
+///
+/// 軸は常に6カテゴリ全て固定表示する（未測定のカテゴリだけ軸ごと消えると
+/// 選手間で形が比較しづらいため）。未測定カテゴリは値0として描画され、
+/// 結果としてその方向だけ線がほぼ伸びない見た目になる。
+///
+/// 目盛りは常に0〜5固定にする。fl_chartのRadarChartは目盛りの最小/最大値を
+/// 明示指定できず、渡した全データの実際の最小値・最大値から都度自動計算する
+/// ため、素の実装だと選手やチームによって枠の大きさ・中心の意味が変わって
+/// しまう。見た目には出ない透明な「番兵」データセット（全軸0・全軸5）を
+/// 追加して最小値0・最大値5を強制し、[RadarChartData.isMinValueAtCenter]と
+/// 組み合わせることで常に「中心=0、外周=5、目盛り1本=1点」に固定している。
 class AbilityRadarChart extends StatelessWidget {
   const AbilityRadarChart({super.key, required this.profile, this.size = 260});
 
@@ -16,17 +24,26 @@ class AbilityRadarChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final measured = profile.measuredScores;
+    final scores = profile.scores;
 
-    if (measured.isEmpty) {
+    if (profile.measuredScores.isEmpty) {
       return _Placeholder(size: size, message: '測定データがありません');
     }
-    if (measured.length < 3) {
-      return _Placeholder(
-        size: size,
-        message: 'レーダーチャートの表示には3項目以上の評価が必要です\n（現在${measured.length}項目）',
-      );
-    }
+
+    final zeroSentinel = RadarDataSet(
+      fillColor: Colors.transparent,
+      borderColor: Colors.transparent,
+      borderWidth: 0,
+      entryRadius: 0,
+      dataEntries: scores.map((_) => const RadarEntry(value: 0)).toList(),
+    );
+    final maxSentinel = RadarDataSet(
+      fillColor: Colors.transparent,
+      borderColor: Colors.transparent,
+      borderWidth: 0,
+      entryRadius: 0,
+      dataEntries: scores.map((_) => const RadarEntry(value: 5)).toList(),
+    );
 
     // fl_chartの軸タイトルはCustomPaintの外側にクリップされずに描画されるため、
     // 2行のタイトルテキストがsize×sizeの範囲をはみ出して直下のウィジェット
@@ -40,6 +57,7 @@ class AbilityRadarChart extends StatelessWidget {
         RadarChartData(
           radarShape: RadarShape.polygon,
           tickCount: 5,
+          isMinValueAtCenter: true,
           titlePositionPercentageOffset: 0.12,
           radarBorderData: BorderSide(color: cs.outlineVariant),
           gridBorderData: BorderSide(color: cs.outlineVariant, width: 1),
@@ -47,18 +65,29 @@ class AbilityRadarChart extends StatelessWidget {
           ticksTextStyle: const TextStyle(fontSize: 0, color: Colors.transparent),
           titleTextStyle: Theme.of(context).textTheme.bodySmall,
           getTitle: (index, angle) {
-            final s = measured[index];
+            final s = scores[index];
             return RadarChartTitle(
-              text: '${s.category.label}\n${s.roundedScore}',
+              text: s.category.label,
+              children: [
+                TextSpan(
+                  text: s.hasData ? '\n${s.roundedScore}' : '\n未測定',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: s.hasData ? cs.primary : cs.outline,
+                  ),
+                ),
+              ],
             );
           },
           dataSets: [
+            zeroSentinel,
+            maxSentinel,
             RadarDataSet(
               fillColor: cs.primary.withValues(alpha: 0.25),
               borderColor: cs.primary,
               borderWidth: 2,
               entryRadius: 3,
-              dataEntries: measured.map((s) => RadarEntry(value: s.score!)).toList(),
+              dataEntries: scores.map((s) => RadarEntry(value: s.score ?? 0)).toList(),
             ),
           ],
         ),
